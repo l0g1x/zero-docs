@@ -27,12 +27,13 @@ export const ROUTES: EachRoute[] = [
     href: '/schema',
     noLink: true,
     items: [
-      {title: 'Basic Concepts', href: '/basic-concepts'},
+      {title: 'Overview', href: '/basic-concepts'},
       {title: 'Tables', href: '/defining-tables'},
       {title: 'Columns', href: '/defining-columns'},
       {title: 'Relationships', href: '/defining-relationships'},
       {title: 'Permissions', href: '/defining-permissions'},
       {title: 'Generators', href: '/generators'},
+      {title: 'Migrations', href: '/migrations'},
     ],
   },
   {

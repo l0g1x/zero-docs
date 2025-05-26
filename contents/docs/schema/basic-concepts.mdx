@@ -4,11 +4,11 @@ title: Basic Concepts
 
 Zero applications have three primary schema components:
 
-1. **Tables and Columns**: The traditional backend database schema that defines your tables, columns, and relationships. This is what you define in your database (e.g., Postgres) and is used by Zero to understand your data structure.
-
-2. **Relationships**: First-class definitions of how tables are connected to each other. These relationships enable powerful querying capabilities and type-safe joins in ZQL.
-
-3. **Permissions**: A separate schema that defines access control rules for your data. This determines who can read, write, or modify specific tables and rows in your database.
+| schema.ts            | Description                                                                   |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **Tables & Columns** | Your main data tables / column definitions.                                   |
+| **Relationships**    | How tables are connected to each other. Allows for type-safe joins in ZQL.    |
+| **Permissions**      | Compile-time only. Define once - never worry about data access control again. |
 
 The Zero schema combines these three aspects to:
 
@@ -33,15 +33,11 @@ The Zero schema combines these three aspects to:
 
 The Zero schema is used in three key places:
 
-1. **Zero Client**: The schema is required when initializing a Zero client instance (i.e. inside a React provider). It provides type safety and relationship information for queries and mutations.
-
-2. **Zero Cache Server**: The schema is used by the `zero-cache` server to validate and process client requests, ensuring data consistency and proper relationship handling.
-
-3. **Permissions Deployment**: When deploying permissions using `npx zero-deploy-permissions`, the schema is used to validate and apply permission changes. This is needed when:
-
-   - The core database schema has been modified
-   - Only the permissions schema has been changed
-   - You need to update existing permissions
+| Location                 | Description                                                                      | Use Case                                                                                                                                                                                         |
+| ------------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Zero Client**          | Required when initializing a Zero client instance (i.e. inside a React provider) | Provides type safety and relationship information for queries and mutations                                                                                                                      |
+| **Zero Cache**           | Used by the `zero-cache` server to validate and process client requests          | Ensures data consistency and proper relationship handling                                                                                                                                        |
+| **Permissions Deployer** | Used when deploying permissions using `npx zero-deploy-permissions`              | Validates and applies permission changes when:<br/>- The core database schema has been modified<br/>- Only the permissions schema has been changed<br/>- You need to update existing permissions |
 
 In all cases, the schema file location is specified using the `ZERO_SCHEMA_PATH` environment variable.
 
@@ -49,7 +45,7 @@ In all cases, the schema file location is specified using the `ZERO_SCHEMA_PATH`
 
 The Zero schema is encoded in a TypeScript file that is conventionally called `schema.ts` file. For example, see [the schema file for`hello-zero`](https://github.com/rocicorp/hello-zero/blob/main/src/schema.ts).
 
-## Database Schemas
+### Database Schemas (schema.ts)
 
 Use `createSchema` to define the entire Zero schema:
 
@@ -62,54 +58,33 @@ export const schema = createSchema({
 });
 ```
 
-## Migrations
+### Permissions (schema.ts)
 
-Zero uses TypeScript-style structural typing to detect schema changes and implement smooth migrations.
+Use `definePermissions` to define the permissions for your schema.
 
-### How it Works
+```tsx
+import {definePermissions} from '@rocicorp/zero';
 
-When the Zero client connects to `zero-cache` it sends a copy of the schema it was constructed with. `zero-cache` compares this schema to the one it has, and rejects the connection with a special error code if the schema is incompatible.
-
-By default, The Zero client handles this error code by calling `location.reload()`. The intent is to to get a newer version of the app that has been updated to handle the new server schema.
-
-<Note type="note" heading="Update Order">
-  It's important to update the database schema first, then the app. Otherwise a reload loop will occur.
-
-If a reload loop does occur, Zero uses exponential backoff to avoid overloading the server.
-
-</Note>
-
-If you want to delay this reload, you can do so by providing the `onUpdateNeeded` constructor parameter:
-
-```ts
-const z = new Zero({
-  onUpdateNeeded: updateReason => {
-    if (reason.type === 'SchemaVersionNotSupported') {
-      // Do something custom here, like show a banner.
-      // When you're ready, call `location.reload()`.
-    }
-  },
+export const permissions = definePermissions<AuthData, Schema>(schema, () => {
+  return {
+    user: {
+      select: [allowIfAuthenticated],
+    },
+  };
 });
 ```
 
-If the schema changes while a client is running in a compatible way, `zero-cache` syncs the schema change to the client so that it's ready when the app reloads and gets new code that needs it. If the schema changes while a client is running in an incompatible way, `zero-cache` will close the client connection with the same error code as above.
+## Schema Changes and Migrations
 
-### Schema Change Process
+For information about how Zero handles schema changes and migrations, see the [Schema Migrations](/docs/schema/migrations) documentation.
 
-Like other database-backed applications, Zero schema migration generally follow an "expand/migrate/contract" pattern:
+## Complete Examples
 
-1. Implement and run an "expand" migration on the backend that is backwards compatible with existing schemas. Add new rows, tables, as well as any defaults and triggers needed for backwards compatibility.
-2. Add any new permissions required for the new tables/columns by running [`zero-deploy-permissions`](/docs/permissions#permission-deployment).
-3. Update and deploy the client app to use the new schema.
-4. Optionally, after some grace period, implement and run a "contract" migration on the backend, deleting any obsolete rows/tables.
+To see complete schema implementations in action:
 
-Steps 1-3 can generally be done as part of one deploy by your CI pipeline, but step 4 would be weeks later when most open clients have refreshed and gotten new code.
+| Example                                                                             | Complexity | Description                                                                                                       |
+| ----------------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------- |
+| **[hello-zero](https://github.com/rocicorp/hello-zero/blob/main/src/schema.ts)**    | Basic      | Simple schema with users and messages, demonstrating basic table definitions, relationships, and permissions      |
+| **[zbugs](https://github.com/rocicorp/mono/blob/main/apps/zbugs/shared/schema.ts)** | Advanced   | Complex bug tracking application with multiple tables, advanced relationships, and sophisticated permission rules |
 
-<Note
-  type="warning"
-  slug="postgres-special-cases"
-  heading="Postgres Special Cases"
->
-  Certain schema changes require special handling in Postgres. See [Schema
-  Changes](/docs/postgres-support#schema-changes) for details.
-</Note>
+These examples show how to structure real-world Zero applications and demonstrate best practices for schema organization.
