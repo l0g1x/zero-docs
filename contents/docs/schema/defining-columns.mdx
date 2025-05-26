@@ -2,7 +2,7 @@
 title: Defining Columns
 ---
 
-Column types are defined with the `boolean()`, `number()`, `string()`, `json()`, and `enumeration()` helpers. See [Column Types](/docs/postgres-support#column-types) for how database types are mapped to these types.
+Column types are defined with the `boolean()`, `number()`, `string()`, `json()`, and `enumeration()` helpers. See the [Column Types](#column-types) section below for how database types are mapped to these types.
 
 <Note type="warning" slug="type-mismatches" heading="Type Mismatches">
   Currently, if the database type doesn't map correctly to the Zero type,
@@ -10,6 +10,23 @@ Column types are defined with the `boolean()`, `number()`, `string()`, `json()`,
   type. This is a bug – in the future, this will be an error. See
   https://bugs.rocicorp.dev/issue/3112.
 </Note>
+
+## Column Types
+
+| Postgres Type                     | Type to put in `schema.ts` | Resulting JS/TS Type |
+| --------------------------------- | -------------------------- | -------------------- |
+| All numeric types                 | `number`                   | `number`             |
+| `char`, `varchar`, `text`, `uuid` | `string`                   | `string`             |
+| `bool`                            | `boolean`                  | `boolean`            |
+| `date`, `timestamp`, `timestampz` | `number`                   | `number`             |
+| `json`, `jsonb`                   | `json`                     | `JSONValue`          |
+| `enum`                            | `enumeration`              | `string`             |
+
+Other Postgres column types aren't supported. They will be ignored when replicating (the synced data will be missing that column) and you will get a warning when `zero-cache` starts up.
+
+If your schema has a pg type not listed here, you can support it in Zero by using a trigger to map it to some type that Zero can support. For example if you have an [enum type](https://www.postgresql.org/docs/current/datatype-enum.html#DATATYPE-ENUM) `Mood` used by column `user_mood mood`, you can use a trigger to map it to a `user_mood_text text` column. You would then use another trigger to map changes to `user_mood_text` back to `user_mood` so that the data can be updated by Zero.
+
+Let us know if the lack of a particular column type is hindering your use of Zero. It can likely be added.
 
 ## Optional Columns
 
@@ -36,9 +53,40 @@ An optional column can store a value of the specified type or `null` to mean _no
 
 </Note>
 
+## Column Defaults
+
+Default values are allowed in the Postgres schema but there currently is no way to use them from a Zero app. The create mutation requires all columns to be specified, except when columns are nullable (in which case,they default to null). Since there is no way to leave non-nullable columns off the insert, there is no way for PG to apply the default. This is a known issue and will be fixed in the future.
+
+## IDs and Primary Keys
+
+### IDs
+
+It is strongly recommended that primary keys be client-generated random strings like [uuid](https://www.npmjs.com/package/uuid), [ulid](https://www.npmjs.com/package/ulid), [nanoid](https://www.npmjs.com/package/nanoid), etc. This makes optimistic creation and updates much easier.
+
+<Note type="note" slug="client-generated-ids" heading="Why are client-generated IDs better?">
+  Imagine that the PK of your table is an auto-incrementing integer. If you optimistically create an entity of this type, you will have to give it some ID – the type will require it locally, but also if you want to optimistically create relationships to this row you'll need an ID.
+
+You could sync the highest value seen for that table, but there are race conditions and it is possible for that ID to be taken by the time the creation makes it to the server. Your database can resolve this and assign the next ID, but now the relationships you created optimistically will be against the wrong row. Blech.
+
+GUIDs makes a lot more sense in synced applications.
+
+If your table has a natural key you can use that and it has less problems. But there is still the chance for a conflict. Imagine you are modeling orgs and you choose domainName as the natural key. It is possible for a race to happen and when the creation gets to the server, somebody has already chosen that domain name. In that case, the best thing to do is reject the write and show the user an error.
+
+</Note>
+
+If you want to have a short auto-incrementing numeric ID for ux reasons (ie, a bug number), that is possible – See [Demo Video](https://discord.com/channels/830183651022471199/1288232858795769917/1298114323272568852)!
+
+### Primary Keys
+
+Each table synced with Zero must have either a primary key or at least one unique index.
+
+This is needed so that Zero can identify rows during sync, to distinguish between an edit and a remove/add.
+
+Multi-column primary and foreign keys are supported.
+
 ## Enumerations
 
-Use the `enumeration` helper to define a column that can only take on a specific set of values. This is most often used alongside an [`enum` Postgres column type](postgres-support#column-types).
+Use the `enumeration` helper to define a column that can only take on a specific set of values. This is most often used alongside an [`enum` Postgres column type](#column-types).
 
 ```tsx
 import {table, string, enumeration} from '@rocicorp/zero';
