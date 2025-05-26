@@ -1,0 +1,128 @@
+---
+title: Defining Permissions
+---
+
+Permissions in Zero are defined using the `definePermissions` function. This allows you to control access to your data at a granular level, determining who can read specific tables and rows in your database.
+
+<Note type="note" heading="Schema File Location">
+  Permissions are typically defined in the same `schema.ts` file where you
+  define your tables, columns, and relationships. This keeps all schema-related
+  code in one place and makes it easier to maintain.
+</Note>
+
+<Note type="note" heading="Custom Mutators">
+  While permissions control read access to your data, write access (insert,
+  update, delete) is now handled by [custom mutators](/docs/custom-mutators).
+  Custom mutators provide more flexibility and power for controlling write
+  operations.
+</Note>
+
+## Basic Usage
+
+```ts
+import {definePermissions} from '@rocicorp/zero';
+
+// In your schema.ts file, or imported from a prisma/drizzle generated file
+export const schema = createSchema({
+  tables: [user, issue, message],
+  relationships: [userRelationships, issueRelationships, messageRelationships],
+});
+
+export const permissions = definePermissions<AuthData, Schema>(schema, () => {
+  // Define your permissions here
+});
+```
+
+The `AuthData` type parameter represents the decoded JWT claims that will be available to your permission rules. For example:
+
+```ts
+type AuthData = {
+  sub: string; // The logged-in user's ID
+  role?: string; // Optional role field
+};
+```
+
+## Permission Structure
+
+Permissions are defined as a policy object for each table in your schema. Each policy defines a ruleset for the `select` operation that controls who can read data:
+
+```ts
+export const permissions = definePermissions<AuthData, Schema>(schema, () => ({
+  issue: {
+    row: {
+      select: [allowIfInOrganization],
+    },
+  },
+}));
+```
+
+## Access Control
+
+By default, all operations are denied unless explicitly allowed. This is a security feature that helps prevent accidental data exposure.
+
+To allow full read access to a table (e.g., during development), use the `ANYONE_CAN` helper:
+
+```ts
+import {ANYONE_CAN} from '@rocicorp/zero';
+
+const permissions = definePermissions<AuthData, Schema>(schema, () => ({
+  issue: {
+    row: {
+      select: ANYONE_CAN,
+    },
+  },
+}));
+```
+
+## Writing Rules
+
+Rules are TypeScript functions that receive the user's `AuthData` and generate a ZQL where expression. At least one rule in a ruleset must return a row for the operation to be allowed.
+
+### Select Rules
+
+Select rules act like filters. If a user doesn't have permission to read a row, it will be filtered out of the result set without generating an error:
+
+```ts
+const allowIfIssueCreator = (
+  authData: AuthData,
+  {cmp}: ExpressionBuilder<Schema, 'issue'>,
+) => cmp('creatorID', authData.sub);
+
+const permissions = definePermissions<AuthData, Schema>(schema, () => ({
+  issue: {
+    row: {
+      select: [allowIfIssueCreator],
+    },
+  },
+}));
+```
+
+## Permission Deployment
+
+Permissions are compiled into a JSON-based format at build-time and stored in the `{ZERO_APP_ID}.permissions` table of your upstream database. This file is then replicated to `zero-cache`.
+
+To deploy permissions:
+
+1. During development: Permissions are automatically compiled and uploaded as part of the `zero-cache-dev` script
+2. In production: Use `npx zero-deploy-permissions` to update permissions in your production database
+
+<Note type="warning" slug="rule-compilation">
+  The permission compilation process is limited. Rule functions are not actually
+  invoked at runtime. Instead, they are invoked with a placeholder `AuthData` at
+  build time. Only property access of `AuthData` is allowed - you cannot use
+  iteration, conditionals, or global state in your rules.
+</Note>
+
+## Debugging Permissions
+
+To debug permission issues:
+
+1. For read permissions: Use the `analyze-query` utility with the `--apply-permissions` flag
+2. Look for `WARN` level logs in `zero-cache` output
+
+See the [Debugging Permissions](/docs/debug/permissions) documentation for more details.
+
+## Examples
+
+- [hello-zero](https://github.com/rocicorp/hello-zero/blob/main/src/schema.ts) - Simple example of read permissions
+- [zbugs](https://github.com/rocicorp/mono/blob/main/apps/zbugs/shared/schema.ts#L217) - More complex example with multiple permission types
