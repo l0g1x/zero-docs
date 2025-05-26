@@ -1,0 +1,75 @@
+---
+title: Generating Zero Schemas
+---
+
+Zero provides several community-maintained tools to generate schemas from popular ORMs and database tools.
+
+> Note: Schema generators will only define the tables, columns, and relationships - but you will still need to define the permissions.
+
+## Community Generators
+
+Generate Zero schemas from existing ORM provider schemas
+
+- [Drizzle](#drizzle-zero)
+- [Prisma](#prisma-generator-zero)
+
+## Drizzle
+
+[drizzle-zero](https://github.com/BriefHQ/drizzle-zero) generates Zero schemas from Drizzle ORM schemas. It supports:
+
+### Installation
+
+```bash
+npm install drizzle-zero
+# or
+yarn add drizzle-zero
+# or
+pnpm add drizzle-zero
+```
+
+### Usage
+
+1. Define your Drizzle schema
+2. Add the schema generation script to your `package.json`:
+
+```json
+{
+  "scripts": {
+    "generate": "drizzle-zero generate --format",
+    "postinstall": "npm generate"
+  }
+}
+```
+
+3. Import and use the generated schema in your Zero application
+
+## Prisma
+
+[prisma-generator-zero](https://github.com/passionfroot/prisma-generator-zero) generates Zero schemas from Prisma schemas. It provides:
+
+### Installation
+
+```bash
+npm install prisma-generator-zero
+# or
+yarn add prisma-generator-zero
+# or
+pnpm add prisma-generator-zero
+```
+
+### Usage
+
+1. Add the generator to your `schema.prisma`:
+
+```ts
+generator zero {
+  provider = "prisma-generator-zero"
+}
+```
+
+2. Run Prisma generate to create the Zero schema
+3. Import and use the generated schema in your Zero application
+
+## Contributing
+
+If you have created a schema generator for Zero, we'd love to add it to this list! Send us a [pull request](https://github.com/rocicorp/zero-docs/pulls) to add your generator.
