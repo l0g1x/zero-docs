@@ -18,6 +18,23 @@ const user = table('user')
   .primaryKey('id');
 ```
 
+## Naming Requirements
+
+### Object Names
+
+- Table and column names must begin with a letter or underscore
+  - This can be followed letters, numbers, underscores, and hyphens
+  - Regex: `/^[A-Za-z_]+[A-Za-z0-9_-]*$/`
+- The column name `_0_version` is reserved for internal use
+
+### Object Types
+
+- Tables are synced
+- Views are not synced
+- `identity` generated columns are synced
+- All other generated columns are not synced
+- Indexes aren't _synced_ per-se but we do implicitly add indexes to the replica that match the upstream indexes. In the future this will be customizable.
+
 ### Name Mapping
 
 Use `from()` to map a TypeScript table or column name to a different database name:

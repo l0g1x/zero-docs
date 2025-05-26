@@ -4,20 +4,11 @@ title: Supported Postgres Features
 
 Postgres has a massive feature set, of which Zero supports a growings subset.
 
-## Object Names
-
-- Table and column names must begin with a letter or underscore
-  - This can be followed letters, numbers, underscores, and hyphens
-  - Regex: `/^[A-Za-z_]+[A-Za-z0-9_-]*$/`
-- The column name `_0_version` is reserved for internal use
-
-## Object Types
-
-- Tables are synced
-- Views are not synced
-- `identity` generated columns are synced
-- All other generated columns are not synced
-- Indexes aren’t _synced_ per-se but we do implicitly add indexes to the replica that match the upstream indexes. In the future this will be customizable.
+<Note type="note" heading="Table and Column Naming">
+  For information about table and column naming requirements and object types,
+  see the [Defining Tables](/docs/schema/defining-tables#naming-requirements)
+  documentation.
+</Note>
 
 ## Column Types
 
@@ -30,7 +21,7 @@ Postgres has a massive feature set, of which Zero supports a growings subset.
 | `json`, `jsonb`                   | `json`                     | `JSONValue`          |
 | `enum`                            | `enumeration`              | `string`             |
 
-Other Postgres column types aren’t supported. They will be ignored when replicating (the synced data will be missing that column) and you will get a warning when `zero-cache` starts up.
+Other Postgres column types aren't supported. They will be ignored when replicating (the synced data will be missing that column) and you will get a warning when `zero-cache` starts up.
 
 If your schema has a pg type not listed here, you can support it in Zero by using a trigger to map it to some type that Zero can support. For example if you have an [enum type](https://www.postgresql.org/docs/current/datatype-enum.html#DATATYPE-ENUM) `Mood` used by column `user_mood mood`, you can use a trigger to map it to a `user_mood_text text` column. You would then use another trigger to map changes to `user_mood_text` back to `user_mood` so that the data can be updated by Zero.
 
@@ -45,7 +36,7 @@ Default values are allowed in the Postgres schema but there currently is no way 
 It is strongly recommended that primary keys be client-generated random strings like [uuid](https://www.npmjs.com/package/uuid), [ulid](https://www.npmjs.com/package/ulid), [nanoid](https://www.npmjs.com/package/nanoid), etc. This makes optimistic creation and updates much easier.
 
 <Note type="note" slug="client-generated-ids" heading="Why are client-generated IDs better?">
-  Imagine that the PK of your table is an auto-incrementing integer. If you optimistically create an entity of this type, you will have to give it some ID – the type will require it locally, but also if you want to optimistically create relationships to this row you’ll need an ID.
+  Imagine that the PK of your table is an auto-incrementing integer. If you optimistically create an entity of this type, you will have to give it some ID – the type will require it locally, but also if you want to optimistically create relationships to this row you'll need an ID.
 
 You could sync the highest value seen for that table, but there are race conditions and it is possible for that ID to be taken by the time the creation makes it to the server. Your database can resolve this and assign the next ID, but now the relationships you created optimistically will be against the wrong row. Blech.
 
@@ -67,7 +58,7 @@ Multi-column primary and foreign keys are supported.
 
 ## Limiting Replication
 
-You can use [Permissions](permissions) to limit tables and rows from replicating to Zero. In the near future you’ll also be able to use Permissions to limit individual columns.
+You can use [Permissions](permissions) to limit tables and rows from replicating to Zero. In the near future you'll also be able to use Permissions to limit individual columns.
 
 Until then, a workaround is to use the Postgres [_publication_](https://www.postgresql.org/docs/current/sql-createpublication.html) feature to control the tables and columns that are replicated into `zero-cache`.
 
