@@ -1,0 +1,57 @@
+---
+title: Defining Tables
+---
+
+## Table Schemas
+
+Use the `table` function to define each table in your Zero schema:
+
+```tsx
+import {table, string, boolean} from '@rocicorp/zero';
+
+const user = table('user')
+  .columns({
+    id: string(),
+    name: string(),
+    partner: boolean(),
+  })
+  .primaryKey('id');
+```
+
+### Name Mapping
+
+Use `from()` to map a TypeScript table or column name to a different database name:
+
+```ts
+const userPref = table('userPref')
+  // Map TS "userPref" to DB name "user_pref"
+  .from('user_pref')
+  .columns({
+    id: string(),
+    // Map TS "orgID" to DB name "org_id"
+    orgID: string().from('org_id'),
+  });
+```
+
+### Multiple Schemas
+
+You can also use `from()` to access other Postgres schemas:
+
+```ts
+// Sync the "event" table from the "analytics" schema.
+const event = table('event').from('analytics.event');
+```
+
+### Compound Primary Keys
+
+Pass multiple columns to `primaryKey` to define a compound primary key:
+
+```ts
+const user = table('user')
+  .columns({
+    orgID: string(),
+    userID: string(),
+    name: string(),
+  })
+  .primaryKey('orgID', 'userID');
+```

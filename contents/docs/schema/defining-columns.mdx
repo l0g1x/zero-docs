@@ -1,0 +1,69 @@
+---
+title: Defining Columns
+---
+
+Column types are defined with the `boolean()`, `number()`, `string()`, `json()`, and `enumeration()` helpers. See [Column Types](/docs/postgres-support#column-types) for how database types are mapped to these types.
+
+<Note type="warning" slug="type-mismatches" heading="Type Mismatches">
+  Currently, if the database type doesn't map correctly to the Zero type,
+  replication will continue and succeed but the data won't match the TypeScript
+  type. This is a bug – in the future, this will be an error. See
+  https://bugs.rocicorp.dev/issue/3112.
+</Note>
+
+## Optional Columns
+
+Columns can be marked _optional_. This corresponds to the SQL concept `nullable`.
+
+```tsx
+const user = table('user')
+  .columns({
+    id: string(),
+    name: string(),
+    nickName: string().optional(),
+  })
+  .primaryKey('id');
+```
+
+An optional column can store a value of the specified type or `null` to mean _no value_.
+
+<Note type="note" heading="Null and undefined">
+    Note that `null` and `undefined` mean different things when working with Zero rows.
+
+    - When reading, if a column is `optional`, Zero can return `null` for that field. `undefined` is not used at all when Reading from Zero.
+    - When writing, you can specify `null` for an optional field to explicitly write `null` to the datastore, unsetting any previous value.
+    - For `create` and `upsert` you can set optional fields to `undefined` (or leave the field off completely) to take the default value as specified by backend schema for that column. For `update` you can set any non-PK field to `undefined` to leave the previous value unmodified.
+
+</Note>
+
+## Enumerations
+
+Use the `enumeration` helper to define a column that can only take on a specific set of values. This is most often used alongside an [`enum` Postgres column type](postgres-support#column-types).
+
+```tsx
+import {table, string, enumeration} from '@rocicorp/zero';
+
+const user = table('user')
+  .columns({
+    id: string(),
+    name: string(),
+    mood: enumeration<'happy' | 'sad' | 'taco'>(),
+  })
+  .primaryKey('id');
+```
+
+## Custom JSON Types
+
+Use the `json` helper to define a column that stores a JSON-compatible value:
+
+```tsx
+import {table, string, json} from '@rocicorp/zero';
+
+const user = table('user')
+  .columns({
+    id: string(),
+    name: string(),
+    settings: json<{theme: 'light' | 'dark'}>(),
+  })
+  .primaryKey('id');
+```
