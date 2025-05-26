@@ -4,7 +4,10 @@ title: Generating Zero Schemas
 
 Zero provides several community-maintained tools to generate schemas from popular ORMs and database tools.
 
-> Note: Schema generators will only define the tables, columns, and relationships - but you will still need to define the permissions.
+<Note type="note" heading="Schema Generation">
+  Schema generators will only define the tables, columns, and relationships -
+  but you will still need to define the permissions.
+</Note>
 
 ## Community Generators
 
@@ -16,6 +19,16 @@ Generate Zero schemas from existing ORM provider schemas
 ## Drizzle
 
 [drizzle-zero](https://github.com/BriefHQ/drizzle-zero) generates Zero schemas from Drizzle ORM schemas. It supports:
+
+- Converting Drizzle schemas to Zero schemas with bidirectional relationships
+- Handling all Drizzle column types supported by Zero
+- Type-safe schema generation with inferred types from Drizzle
+- Support for relationships:
+  - One-to-one relationships
+  - One-to-many relationships
+  - Many-to-many relationships with junction tables
+  - Self-referential relationships
+- Custom schemas and column mappings
 
 ### Installation
 
@@ -46,6 +59,11 @@ pnpm add drizzle-zero
 ## Prisma
 
 [prisma-generator-zero](https://github.com/passionfroot/prisma-generator-zero) generates Zero schemas from Prisma schemas. It provides:
+
+- Automatic conversion of Prisma models to Zero schemas
+- Support for Prisma's data types and relationships
+- Type-safe schema generation
+- Integration with Prisma's development workflow
 
 ### Installation
 
