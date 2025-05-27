@@ -28,6 +28,7 @@ export const ROUTES: EachRoute[] = [
     noLink: true,
     items: [
       {title: 'Overview', href: '/basic-concepts'},
+      {title: 'Examples', href: '/examples'},
       {title: 'Tables', href: '/defining-tables'},
       {title: 'Columns', href: '/defining-columns'},
       {title: 'Relationships', href: '/defining-relationships'},
