@@ -45,12 +45,13 @@ In all cases, the schema file location is specified using the `ZERO_SCHEMA_PATH`
 
 The Zero schema is encoded in a TypeScript file that is conventionally called `schema.ts` file. For example, see [the schema file for`hello-zero`](https://github.com/rocicorp/hello-zero/blob/main/src/schema.ts).
 
-### Database Schemas (schema.ts)
+### Tables & Relationships
 
 Use `createSchema` to define the entire Zero schema:
 
 ```tsx
 import {createSchema} from '@rocicorp/zero';
+import {definePermissions} from '@rocicorp/zero';
 
 export const schema = createSchema({
   tables: [user, medium, message],
@@ -58,33 +59,34 @@ export const schema = createSchema({
 });
 ```
 
-### Permissions (schema.ts)
+### Permissions
 
 Use `definePermissions` to define the permissions for your schema.
 
 ```tsx
-import {definePermissions} from '@rocicorp/zero';
-
+// co-located in schema.ts. Only used at compile time, not at runtime.
 export const permissions = definePermissions<AuthData, Schema>(schema, () => {
   return {
     user: {
-      select: [allowIfAuthenticated],
+      select: [allowIfAuthenticated], // soon to be replaced by custom queries
+      // insert: // DEPRECATED: replaced by custom mutators
+      // update: // DEPRECATED: replaced by custom mutators
+      // delete: // DEPRECATED: replaced by custom mutators
     },
   };
 });
 ```
 
+<Note
+  type="note"
+  slug="permissions-schema-deprecation"
+  heading="Permission definitions in schema.ts will soon be deprecated"
+>
+  As of today, the only permissions you should define inside the schema.ts are
+  read permissions (like `select: [allowIfAuthenticated]`). Mutation permissions
+  are now handled by [custom mutators](/docs/custom-mutators).
+</Note>
+
 ## Schema Changes and Migrations
 
 For information about how Zero handles schema changes and migrations, see the [Schema Migrations](/docs/schema/migrations) documentation.
-
-## Complete Examples
-
-To see complete schema implementations in action:
-
-| Example                                                                             | Complexity | Description                                                                                                       |
-| ----------------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------- |
-| **[hello-zero](https://github.com/rocicorp/hello-zero/blob/main/src/schema.ts)**    | Basic      | Simple schema with users and messages, demonstrating basic table definitions, relationships, and permissions      |
-| **[zbugs](https://github.com/rocicorp/mono/blob/main/apps/zbugs/shared/schema.ts)** | Advanced   | Complex bug tracking application with multiple tables, advanced relationships, and sophisticated permission rules |
-
-These examples show how to structure real-world Zero applications and demonstrate best practices for schema organization.
